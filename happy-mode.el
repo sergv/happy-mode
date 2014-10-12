@@ -66,8 +66,6 @@
     (define-key keymap (kbd "<tab>")           #'happy-indent-command)
     (define-key keymap (kbd "S-<tab>")         #'happy-dedent-command)
     (define-key keymap (kbd "S-<iso-lefttab>") #'happy-dedent-command)
-
-
     keymap)
   "Keymap used in happy mode.")
 
@@ -293,7 +291,8 @@ so that this line becomes properly indented.
 The relative indentation among the lines of the expression are preserved."
   (interactive "P")
   (if whole-exp
-    (let ((shift-amount (happy-indent-line))
+    (let ((shift-amount (or (happy-indent-line)
+                            0))
           beg end)
       (save-excursion
         (save-match-data
@@ -331,22 +330,25 @@ Return the amount the indentation changed by."
   (let (indent)
     (save-excursion
       (cond
+        ;; the point is either somewhere before %% or
+        ;; somewhere after %% but in the literal context
         ((save-excursion
            (save-match-data
              (let ((limit (point))
                    state)
                (goto-char (point-min))
-               (not (and (re-search-forward "^%%" limit t)
-                         (happy-in-literal-context?
+               (or (not (re-search-forward "^%%" limit t))
+                   (happy-in-literal-context?
                           (save-excursion
+                            (goto-char limit)
                             (if (re-search-backward
                                  happy-mode-rule-start-regexp
                                  nil
                                  t)
                               (- (match-end 0) 1)
                               (point-min)))
-                          (point)))))))
-         (setq indent 0))
+                          limit)))))
+         (setq indent nil))
         ((save-excursion
            (beginning-of-line)
            (looking-at-p "[ \t]*%"))
@@ -364,8 +366,9 @@ Return the amount the indentation changed by."
              (skip-chars-forward "^:|")
              ;; (skip-chars-forward ":| \t")
              (setq indent (current-column)))))))
-    (happy-mode-indent-to! indent)
-    (skip-chars-forward " \t")
+    (when indent
+      (happy-mode-indent-to! indent)
+      (skip-chars-forward " \t"))
     indent))
 
 ;;;; haskell-blocks mode to highlight Haskell regions in Happy files
