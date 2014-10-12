@@ -54,6 +54,28 @@
 (require 'happy-mode-autoload)
 (require 'haskell-mode)
 
+;;;; prelude
+
+(defmacro happy--rxx (definitions &rest main-expr)
+  "Return `rx' invokation of main-expr that has symbols defined in
+DEFINITIONS substituted by definition body. DEFINITIONS is list
+of let-bindig forms, (<symbol> <body>). No recursion is permitted -
+no defined symbol should show up in body of its definition or in
+body of any futher definition."
+  (declare (indent 1))
+  (let ((def (cl-find-if (lambda (def) (not (= 2 (length def)))) definitions)))
+    (when def
+      (error "happy-rxx: every definition should consist of two elements: (name def), offending definition: %s"
+             def)))
+  `(rx ,@(cl-reduce (lambda (def expr)
+                      (cl-subst (cadr def) (car def) expr
+                                :test #'eq))
+                    definitions
+                    :initial-value main-expr
+                    :from-end t)))
+
+;;;; happy mode
+
 (defconst happy-colon-column 16 "\
 *The column in which to place a colon separating a token from its definition.")
 
@@ -429,24 +451,6 @@ Return the amount the indentation changed by."
     (delete-region (line-beginning-position) (point))
     (dotimes (i col)
       (insert ?\s))))
-
-(defmacro happy--rxx (definitions &rest main-expr)
-  "Return `rx' invokation of main-expr that has symbols defined in
-DEFINITIONS substituted by definition body. DEFINITIONS is list
-of let-bindig forms, (<symbol> <body>). No recursion is permitted -
-no defined symbol should show up in body of its definition or in
-body of any futher definition."
-  (declare (indent 1))
-  (let ((def (cl-find-if (lambda (def) (not (= 2 (length def)))) definitions)))
-    (when def
-      (error "happy-rxx: every definition should consist of two elements: (name def), offending definition: %s"
-             def)))
-  `(rx ,@(cl-reduce (lambda (def expr)
-                      (cl-subst (cadr def) (car def) expr
-                                :test #'eq))
-                    definitions
-                    :initial-value main-expr
-                    :from-end t)))
 
 ;;;;
 
