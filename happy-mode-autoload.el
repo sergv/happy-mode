@@ -11,7 +11,7 @@
 (mmm-add-classes
  '((haskell-blocks
     :submode haskell-mode
-    ;;:face mmm-output-submode-face
+    ;; :face font-lock-function-name-face ;; mmm-output-submode-face
     :front "{%?"
     :front-verify haskell-blocks-verify-front
     :back haskell-blocks-find-back

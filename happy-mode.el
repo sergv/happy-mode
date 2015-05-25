@@ -53,6 +53,7 @@
 
 (require 'happy-mode-autoload)
 (require 'haskell-mode)
+(require 'cc-mode)
 
 ;;;; prelude
 
@@ -143,7 +144,8 @@ body of any futher definition."
      (0 'font-lock-keyword-face))
     (,(rx bol
           (group
-           (+ (regexp "[a-z0-9_]")))
+           (regexp "[a-z0-9_]")
+           (* (regexp "[a-zA-Z0-9_]")))
           (* (any ?\s ?\t ?\n ?\r))
           ":")
      (1 'font-lock-function-name-face))
@@ -159,10 +161,9 @@ body of any futher definition."
                    (+ (not (any ?\n ?\')))
                    "'")))
      (0 'font-lock-negation-char-face))
-    (,(rx "$" (or digit "$"))
+    (,(rx "$" (or (+ digit) "$"))
      (0 'font-lock-variable-name-face)))
   "Highlight definitions of happy distinctive constructs for font-lock.")
-
 
 (define-derived-mode happy-mode prog-mode "Happy"
   "Major mode for editing Happy files."
@@ -224,7 +225,7 @@ body of any futher definition."
          (happy-mode-indent-to! happy-colon-column)
          (insert last-command-event)
          (insert " "))
-        (else
+        (t
          (self-insert-command (prefix-numeric-value arg)))))
 
 (defun electric-happy-semi (arg)
@@ -412,15 +413,16 @@ Return the amount the indentation changed by."
                                       (point)))
            (parens-depth (nth 0 state))
            (inside-string? (nth 3 state)))
-      (and (= 1 parens-depth)
-           (not inside-string?)))))
+      (list parens-depth
+            inside-string?))))
 
 (defun haskell-blocks-verify-front ()
   (save-excursion
     (goto-char (match-end 0))
-    (when (not (and (= ?\{ (char-before))
-                    (= ?- (char-after))))
-      (haskell-blocks-verify-location))))
+    (let ((in-comment? (and (= ?\{ (char-before))
+                            (= ?- (char-after)))))
+      (when (not in-comment?)
+        (haskell-blocks-verify-location)))))
 
 (defun haskell-blocks-verify-back ()
   (save-excursion
