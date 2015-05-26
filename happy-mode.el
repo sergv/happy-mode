@@ -140,7 +140,8 @@ body of any futher definition."
               "%attributetype"
               "%partial"
               "%importedidentity"
-              "%expect"))
+              "%expect"
+              "%prec"))
      (0 'font-lock-keyword-face))
     (,(rx bol
           (group
